@@ -1,0 +1,49 @@
+# MATLAB .gitignore
+
+# Compiled MEX files
+*.mex*
+
+# Packaged app and target files
+*.mlappinstall
+*.mlpkginstall
+
+# Generated helptoc.xml
+helptoc.xml
+
+# Autosave files
+*.asv
+*.autosave
+
+# Simulink autosave
+*.slxc
+
+# Simulink code generation folders
+slprj/
+sccprj/
+
+# MATLAB code generation folders
+codegen/
+
+# Cache files
+*.mlc
+
+# MATLAB app designer
+*.mlapp~
+
+# Temporary files
+*.tmp
+*.bak
+
+# Build results
+*.exe
+*.dll
+*.so
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
