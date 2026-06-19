@@ -39,7 +39,7 @@ Architect and systematically simulate a comprehensive **3-DOF robotic arm** moti
 Simulation-of-3D-Robotic-Arm/
 │
 ├── robotic_arm_3d_simulation.m   # MATLAB simulation script
-├── Matlab.pdf                    # Project documentation
+├── Final PPT.pdf                 # Project documentation
 ├── README.md                     
 ├── LICENSE                       
 └── .gitignore                    
