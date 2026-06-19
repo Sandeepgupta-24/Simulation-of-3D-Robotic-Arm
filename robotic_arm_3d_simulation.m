@@ -1,8 +1,9 @@
 %% ========================================================================
 %  SIMULATION OF 3D ROBOTIC ARM
 %  ========================================================================
-%  Description : 3-DOF Robotic Arm Simulation with Forward & Inverse
-%                Kinematics using Denavit-Hartenberg (DH) Parameters
+%  Description : 3-DOF Robotic Arm Simulation with Forward Kinematics
+%                using Denavit-Hartenberg (DH) Parameters, Workspace
+%                Analysis, and Smooth 3D Animation
 %  Author      : Sandeep Gupta
 %  Platform    : MATLAB R2020a or later
 %  ========================================================================
@@ -34,8 +35,8 @@ fprintf('║     SIMULATION OF 3D ROBOTIC ARM (3-DOF)           ║\n');
 fprintf('║     Using Denavit-Hartenberg Convention             ║\n');
 fprintf('╚══════════════════════════════════════════════════════╝\n\n');
 
-%% =================== FORWARD KINEMATICS FUNCTION ========================
-fprintf('>> Initializing Forward Kinematics Engine...\n');
+%% =================== FORWARD KINEMATICS =================================
+fprintf('>> Computing Forward Kinematics...\n');
 
 % Define initial joint angles (in degrees)
 theta1 = 45;   % Base rotation
@@ -62,7 +63,16 @@ P1 = T01(1:3, 4);                        % Joint 1 position
 P2 = T02(1:3, 4);                        % Joint 2 position
 P3 = T03(1:3, 4);                        % End-effector position
 
-% Display end-effector position
+% Display results
+fprintf('\n   DH Parameters:\n');
+fprintf('   ┌──────┬──────────┬────────┬────────┬────────┐\n');
+fprintf('   │ Link │  θ (deg) │  d (m) │  a (m) │  α (°) │\n');
+fprintf('   ├──────┼──────────┼────────┼────────┼────────┤\n');
+fprintf('   │  1   │  %6.1f  │  %.1f   │  0.0   │   90   │\n', theta1, L1);
+fprintf('   │  2   │  %6.1f  │  0.0   │  %.1f   │    0   │\n', theta2, L2);
+fprintf('   │  3   │  %6.1f  │  0.0   │  %.1f   │    0   │\n', theta3, L3);
+fprintf('   └──────┴──────────┴────────┴────────┴────────┘\n');
+
 fprintf('\n>> End-Effector Position:\n');
 fprintf('   X = %.4f m\n', P3(1));
 fprintf('   Y = %.4f m\n', P3(2));
@@ -76,19 +86,18 @@ figure('Name', 'Simulation of 3D Robotic Arm', ...
        'Color', [0.1 0.1 0.15], ...
        'Position', [100 100 1200 800]);
 
-% ---- Plot Robot Arm ----
 plot_robot_arm(P0, P1, P2, P3, L1, L2, L3);
 
 %% ================== WORKSPACE ANALYSIS ==================================
-fprintf('\n>> Computing Workspace Envelope...\n');
+fprintf('\n>> Computing Workspace Boundary...\n');
 
 figure('Name', 'Workspace Analysis', ...
        'NumberTitle', 'off', ...
        'Color', [0.1 0.1 0.15], ...
        'Position', [150 150 1200 800]);
 
-% Generate workspace points
-N = 20; % Resolution
+% Generate workspace points by sweeping all joint angles
+N = 20; % Resolution per joint
 theta1_range = linspace(deg2rad(theta1_limits(1)), deg2rad(theta1_limits(2)), N);
 theta2_range = linspace(deg2rad(theta2_limits(1)), deg2rad(theta2_limits(2)), N);
 theta3_range = linspace(deg2rad(theta3_limits(1)), deg2rad(theta3_limits(2)), N);
@@ -114,10 +123,14 @@ colorbar('Color', 'white');
 
 hold on;
 % Overlay the current arm configuration
-plot_robot_arm_simple(P0, P1, P2, P3);
+joints = [P0'; P1'; P2'; P3'];
+plot3(joints(:,1), joints(:,2), joints(:,3), 'w-', 'LineWidth', 3);
+scatter3(joints(:,1), joints(:,2), joints(:,3), 80, 'w', 'filled', ...
+         'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
 hold off;
 
-title('Robotic Arm Workspace Envelope', 'Color', 'white', 'FontSize', 16, 'FontWeight', 'bold');
+title('Geometric Workspace Boundary — 3-DOF Robotic Arm', ...
+      'Color', 'white', 'FontSize', 16, 'FontWeight', 'bold');
 xlabel('X (m)', 'Color', 'white', 'FontSize', 12);
 ylabel('Y (m)', 'Color', 'white', 'FontSize', 12);
 zlabel('Z (m)', 'Color', 'white', 'FontSize', 12);
@@ -127,23 +140,23 @@ grid on;
 set(gca, 'GridColor', [0.3 0.3 0.4], 'GridAlpha', 0.5);
 view(45, 30);
 
-fprintf('   Total workspace points computed: %d\n', size(workspace_points, 1));
+fprintf('   Total workspace points: %d\n', size(workspace_points, 1));
 
-%% ================ JOINT TRAJECTORY ANIMATION ============================
-fprintf('\n>> Generating Joint Trajectory Animation...\n');
+%% ================ SMOOTH 3D ANIMATION ===================================
+fprintf('\n>> Generating Smooth Animation...\n');
 
-figure('Name', 'Trajectory Animation', ...
+figure('Name', 'Smooth Animation — Robotic Arm', ...
        'NumberTitle', 'off', ...
        'Color', [0.1 0.1 0.15], ...
        'Position', [200 50 1200 800]);
 
-% Define trajectory: smooth sinusoidal motion
-t_sim = linspace(0, 2*pi, 100);
-theta1_traj = 60 * sin(t_sim);                   % Base oscillation
-theta2_traj = 30 * sin(2*t_sim) + 15;            % Shoulder oscillation
-theta3_traj = 45 * cos(t_sim) - 20;              % Elbow oscillation
+% Smooth sinusoidal joint trajectories
+t_sim = linspace(0, 2*pi, 120);
+theta1_traj = 60 * sin(t_sim);              % Base oscillation
+theta2_traj = 30 * sin(2*t_sim) + 15;       % Shoulder oscillation
+theta3_traj = 45 * cos(t_sim) - 20;         % Elbow oscillation
 
-% Pre-compute trajectory points for end-effector trace
+% Store end-effector trace
 ee_trace = zeros(length(t_sim), 3);
 
 for frame = 1:length(t_sim)
@@ -153,6 +166,7 @@ for frame = 1:length(t_sim)
     t2_f = deg2rad(theta2_traj(frame));
     t3_f = deg2rad(theta3_traj(frame));
     
+    % Forward Kinematics for current frame
     T01_f = dh_transform(t1_f, L1, 0, pi/2);
     T02_f = T01_f * dh_transform(t2_f, 0, L2, 0);
     T03_f = T02_f * dh_transform(t3_f, 0, L3, 0);
@@ -164,10 +178,10 @@ for frame = 1:length(t_sim)
     
     ee_trace(frame, :) = P3_f';
     
-    % Plot arm
+    % Plot the arm
     plot_robot_arm(P0_f, P1_f, P2_f, P3_f, L1, L2, L3);
     
-    % Plot end-effector trace
+    % Overlay end-effector path trace
     hold on;
     if frame > 1
         plot3(ee_trace(1:frame, 1), ee_trace(1:frame, 2), ee_trace(1:frame, 3), ...
@@ -175,44 +189,19 @@ for frame = 1:length(t_sim)
     end
     hold off;
     
-    title(sprintf('Trajectory Animation — Frame %d/%d', frame, length(t_sim)), ...
+    title(sprintf('Smooth Animation — Frame %d/%d', frame, length(t_sim)), ...
           'Color', 'white', 'FontSize', 14, 'FontWeight', 'bold');
     
     drawnow;
     pause(0.03);
 end
 
-fprintf('   Animation complete! (%d frames rendered)\n', length(t_sim));
-
-%% ================ INVERSE KINEMATICS ====================================
-fprintf('\n>> Computing Inverse Kinematics Solution...\n');
-
-% Target end-effector position
-target_pos = [0.8; 0.5; 1.2];
-fprintf('   Target Position: [%.2f, %.2f, %.2f] m\n', target_pos(1), target_pos(2), target_pos(3));
-
-[ik_theta1, ik_theta2, ik_theta3, ik_success] = inverse_kinematics(target_pos, L1, L2, L3);
-
-if ik_success
-    fprintf('   ✓ IK Solution Found!\n');
-    fprintf('   θ1 = %.2f°, θ2 = %.2f°, θ3 = %.2f°\n', ...
-            rad2deg(ik_theta1), rad2deg(ik_theta2), rad2deg(ik_theta3));
-    
-    % Verify with forward kinematics
-    T_verify = dh_transform(ik_theta1, L1, 0, pi/2) * ...
-               dh_transform(ik_theta2, 0, L2, 0) * ...
-               dh_transform(ik_theta3, 0, L3, 0);
-    fk_pos = T_verify(1:3, 4);
-    error_dist = norm(fk_pos - target_pos);
-    fprintf('   FK Verification Error: %.6f m\n', error_dist);
-else
-    fprintf('   ✗ Target position is outside the workspace!\n');
-end
+fprintf('   Animation complete! (%d frames)\n', length(t_sim));
 
 %% =================== JOINT ANGLE PLOTS ==================================
-fprintf('\n>> Generating Joint Angle Analysis Plots...\n');
+fprintf('\n>> Plotting Joint Angle Trajectories...\n');
 
-figure('Name', 'Joint Angle Analysis', ...
+figure('Name', 'Joint Angle Trajectories', ...
        'NumberTitle', 'off', ...
        'Color', [0.1 0.1 0.15], ...
        'Position', [250 100 1200 600]);
@@ -269,23 +258,18 @@ end
 function plot_robot_arm(P0, P1, P2, P3, L1, L2, L3)
     % Plot the 3D robotic arm with styled joints and links
     
-    % Joint positions matrix
     joints = [P0'; P1'; P2'; P3'];
     
-    % Plot links
-    plot3(joints(:,1), joints(:,2), joints(:,3), ...
-          'Color', [0.3 0.7 1], 'LineWidth', 4);
-    hold on;
-    
-    % Plot link outlines (thicker background)
+    % Plot link outlines (thick background)
     plot3(joints(:,1), joints(:,2), joints(:,3), ...
           'Color', [0.1 0.3 0.6], 'LineWidth', 8);
+    hold on;
     
-    % Re-plot links on top
+    % Plot links (foreground)
     plot3(joints(:,1), joints(:,2), joints(:,3), ...
           'Color', [0.3 0.7 1], 'LineWidth', 4);
     
-    % Plot joints
+    % Plot joints with color coding
     joint_colors = [0.2 0.8 0.3;    % Base - Green
                     1.0 0.8 0.0;     % Shoulder - Yellow
                     1.0 0.4 0.1;     % Elbow - Orange
@@ -303,106 +287,35 @@ function plot_robot_arm(P0, P1, P2, P3, L1, L2, L3)
              'FontSize', 10, 'FontWeight', 'bold');
     end
     
-    % Plot base platform
+    % Base platform
     theta_circle = linspace(0, 2*pi, 50);
     r_base = 0.15;
-    x_base = r_base * cos(theta_circle);
-    y_base = r_base * sin(theta_circle);
-    z_base = zeros(size(theta_circle));
-    fill3(x_base, y_base, z_base, [0.3 0.3 0.4], ...
+    fill3(r_base*cos(theta_circle), r_base*sin(theta_circle), ...
+          zeros(size(theta_circle)), [0.3 0.3 0.4], ...
           'FaceAlpha', 0.6, 'EdgeColor', [0.5 0.5 0.6]);
     
-    % Plot coordinate frames at each joint
+    % Coordinate frame at base
     frame_scale = 0.15;
-    % Base frame
-    quiver3(0, 0, 0, frame_scale, 0, 0, 'r', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
-    quiver3(0, 0, 0, 0, frame_scale, 0, 'g', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
-    quiver3(0, 0, 0, 0, 0, frame_scale, 'b', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
+    quiver3(0,0,0, frame_scale,0,0, 'r', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
+    quiver3(0,0,0, 0,frame_scale,0, 'g', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
+    quiver3(0,0,0, 0,0,frame_scale, 'b', 'LineWidth', 1.5, 'MaxHeadSize', 0.5);
     
     hold off;
     
     % Styling
-    title(sprintf('3D Robotic Arm Configuration\nEnd-Effector: [%.3f, %.3f, %.3f] m', ...
+    title(sprintf('3D Robotic Arm — End-Effector: [%.3f, %.3f, %.3f] m', ...
           P3(1), P3(2), P3(3)), ...
           'Color', 'white', 'FontSize', 14, 'FontWeight', 'bold');
     xlabel('X (m)', 'Color', 'white', 'FontSize', 12);
     ylabel('Y (m)', 'Color', 'white', 'FontSize', 12);
     zlabel('Z (m)', 'Color', 'white', 'FontSize', 12);
-    
-    set(gca, 'Color', [0.15 0.15 0.2], ...
-             'XColor', 'w', 'YColor', 'w', 'ZColor', 'w');
-    
-    axis equal;
-    grid on;
+    set(gca, 'Color', [0.15 0.15 0.2], 'XColor', 'w', 'YColor', 'w', 'ZColor', 'w');
+    axis equal; grid on;
     set(gca, 'GridColor', [0.3 0.3 0.4], 'GridAlpha', 0.5);
     
     max_reach = L1 + L2 + L3;
     xlim([-max_reach, max_reach]);
     ylim([-max_reach, max_reach]);
     zlim([-0.2, max_reach + 0.5]);
-    
     view(45, 25);
-    
-    % Add legend
-    legend({'Links', '', '', 'Base', 'Shoulder', 'Elbow', 'End-Effector'}, ...
-           'TextColor', 'white', 'Color', [0.2 0.2 0.25], ...
-           'EdgeColor', [0.4 0.4 0.5], 'Location', 'northeast');
-end
-
-function plot_robot_arm_simple(P0, P1, P2, P3)
-    % Simplified arm plot for overlay on workspace
-    joints = [P0'; P1'; P2'; P3'];
-    plot3(joints(:,1), joints(:,2), joints(:,3), ...
-          'w-', 'LineWidth', 3);
-    scatter3(joints(:,1), joints(:,2), joints(:,3), ...
-             80, 'w', 'filled', 'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
-end
-
-function [theta1, theta2, theta3, success] = inverse_kinematics(target, L1, L2, L3)
-    % Compute Inverse Kinematics for 3-DOF robotic arm
-    % using geometric approach
-    %
-    % Parameters:
-    %   target - [x; y; z] desired end-effector position
-    %   L1, L2, L3 - Link lengths
-    %
-    % Returns:
-    %   theta1, theta2, theta3 - Joint angles (radians)
-    %   success - Boolean indicating if solution exists
-    
-    x = target(1);
-    y = target(2);
-    z = target(3);
-    
-    success = true;
-    
-    % Joint 1: Base rotation (rotation about z-axis)
-    theta1 = atan2(y, x);
-    
-    % Project onto the plane containing links 2 and 3
-    r = sqrt(x^2 + y^2);          % Horizontal distance
-    s = z - L1;                    % Vertical distance from joint 1
-    D = sqrt(r^2 + s^2);          % Distance from joint 1 to target
-    
-    % Check reachability
-    if D > (L2 + L3) || D < abs(L2 - L3)
-        theta1 = 0;
-        theta2 = 0;
-        theta3 = 0;
-        success = false;
-        return;
-    end
-    
-    % Joint 3: Elbow angle (using cosine rule)
-    cos_theta3 = (D^2 - L2^2 - L3^2) / (2 * L2 * L3);
-    cos_theta3 = max(-1, min(1, cos_theta3)); % Clamp for numerical stability
-    theta3 = acos(cos_theta3);     % Elbow-up solution
-    
-    % Joint 2: Shoulder angle
-    beta = atan2(s, r);
-    psi = atan2(L3 * sin(theta3), L2 + L3 * cos(theta3));
-    theta2 = beta - psi;
-    
-    % Negate theta3 for elbow-up convention
-    theta3 = -theta3;
 end
